@@ -1,0 +1,8 @@
+{
+  "name": "AI Fashion Stylist",
+  "description": "An AI-powered fashion assistant that suggests complete outfits for any occasion or based on a single clothing item. Get recommendations for matching clothes and accessories to elevate your style.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
