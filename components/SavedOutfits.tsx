@@ -6,9 +6,10 @@ import SuggestionCard from './SuggestionCard';
 interface SavedOutfitsProps {
     savedOutfits: OutfitSuggestion[];
     onSaveToggle: (suggestion: OutfitSuggestion) => void;
+    onVisualize: (suggestion: OutfitSuggestion) => void;
 }
 
-const SavedOutfits: React.FC<SavedOutfitsProps> = ({ savedOutfits, onSaveToggle }) => {
+const SavedOutfits: React.FC<SavedOutfitsProps> = ({ savedOutfits, onSaveToggle, onVisualize }) => {
     if (!savedOutfits || savedOutfits.length === 0) {
         return (
             <div className="text-center py-16 px-6">
@@ -27,6 +28,7 @@ const SavedOutfits: React.FC<SavedOutfitsProps> = ({ savedOutfits, onSaveToggle 
                         key={suggestion.outfitName}
                         suggestion={suggestion}
                         onSaveToggle={onSaveToggle}
+                        onVisualize={onVisualize}
                         isSaved={true} // Always true on this screen
                     />
                 ))}

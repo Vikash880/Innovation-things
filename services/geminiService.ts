@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { OutfitSuggestion, StyleProfile } from '../types';
 
@@ -78,8 +79,12 @@ const buildPrompt = (basePrompt: string, profile: StyleProfile) => {
     prompt += ` The suggestions should be appropriate for a ${profile.gender}.`;
   }
   if (profile.style || profile.colors) {
-    prompt += ` The user's style profile is: Style - ${profile.style || 'not specified'}, Favorite Colors - ${profile.colors || 'not specified'}. Please tailor the suggestions to this profile.`;
+    prompt += ` Please consider the user's style profile: Style - ${profile.style || 'not specified'}.`;
+    if (profile.colors) {
+        prompt += ` Their favorite colors are ${profile.colors}. These are a preference, not a requirement for every outfit, so only use them if they fit the style.`;
+    }
   }
+  prompt += ` It's also good to include black-colored items (like a shirt, pants, or shoes) where appropriate, as black is a versatile color.`;
   return prompt;
 };
 
@@ -197,3 +202,57 @@ export const decodeAudioData = async (
   }
   return buffer;
 };
+
+export const visualizeOutfit = async (suggestion: OutfitSuggestion, profile: StyleProfile): Promise<string> => {
+    try {
+      let prompt = `Generate a full-body, photorealistic image of a model showcasing a complete outfit. The model's appearance should align with a "${profile.gender || 'person'}" identity. The background should be a clean, minimalist studio setting that doesn't distract from the clothes.\n\n`;
+      prompt += `The outfit is called "${suggestion.outfitName}" and has a "${suggestion.description}" vibe.\n\n`;
+      prompt += "Here are the details of the outfit:\n";
+  
+      if (suggestion.dress) {
+        prompt += `- Dress: A ${suggestion.dress.description} (${suggestion.dress.type}).\n`;
+      }
+      if (suggestion.shirt) {
+        prompt += `- Top: A ${suggestion.shirt.description} (${suggestion.shirt.type}).\n`;
+      }
+      if (suggestion.pants) {
+        prompt += `- Bottoms: ${suggestion.pants.description} (${suggestion.pants.type}).\n`;
+      }
+      prompt += `- Shoes: ${suggestion.shoes.description} (${suggestion.shoes.type}).\n`;
+  
+      if (suggestion.accessories && suggestion.accessories.length > 0) {
+        prompt += "- Accessories:\n";
+        suggestion.accessories.forEach(acc => {
+          prompt += `  - ${acc.name}: ${acc.description}\n`;
+        });
+      }
+  
+      if (suggestion.colorPalette) {
+        prompt += `\nThe main color palette is: ${suggestion.colorPalette}.\n`;
+      }
+      
+      prompt += `\nPlease ensure the generated image is stylish, high-quality, and accurately represents all the described items. The focus should be on the fashion.`
+  
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+              parts: [{ text: prompt }],
+          },
+          config: {
+              responseModalities: [Modality.IMAGE],
+          },
+      });
+  
+      for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+              return part.inlineData.data;
+          }
+      }
+  
+      throw new Error("No image data received from the model.");
+  
+    } catch (error) {
+      console.error("Error visualizing outfit:", error);
+      throw new Error("Failed to visualize the outfit. The model may be busy, or the description was too complex. Please try again.");
+    }
+  };

@@ -9,11 +9,13 @@ import SunglassesIcon from './icons/SunglassesIcon';
 import ChainIcon from './icons/ChainIcon';
 import DressIcon from './icons/DressIcon';
 import HeartIcon from './icons/HeartIcon';
+import SparkleIcon from './icons/SparkleIcon';
 
 interface SuggestionCardProps {
   suggestion: OutfitSuggestion;
   isSaved: boolean;
   onSaveToggle: (suggestion: OutfitSuggestion) => void;
+  onVisualize: (suggestion: OutfitSuggestion) => void;
 }
 
 const getAccessoryIcon = (name: string) => {
@@ -81,7 +83,7 @@ const ColorPalette: React.FC<{ palette: string }> = ({ palette }) => {
 };
 
 
-const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSaved, onSaveToggle }) => {
+const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSaved, onSaveToggle, onVisualize }) => {
   return (
     <div className="relative bg-gray-800/70 rounded-xl shadow-lg p-5 flex flex-col space-y-4 border border-gray-700 hover:border-purple-500 transition-all duration-300 transform hover:-translate-y-1">
       <button
@@ -99,7 +101,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSaved, on
       </h3>
       <p className="text-gray-400 text-sm">{suggestion.description}</p>
       
-      <div className="space-y-4 pt-2 border-t border-gray-700/50">
+      <div className="space-y-4 pt-2 border-t border-gray-700/50 flex-grow">
         {suggestion.dress && <ItemRow icon={<DressIcon />} title={suggestion.dress.type} description={suggestion.dress.description} />}
         {suggestion.shirt && <ItemRow icon={<ShirtIcon />} title={suggestion.shirt.type} description={suggestion.shirt.description} />}
         {suggestion.pants && <ItemRow icon={<PantsIcon />} title={suggestion.pants.type} description={suggestion.pants.description} />}
@@ -114,6 +116,15 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSaved, on
         )}
       </div>
       {suggestion.colorPalette && <ColorPalette palette={suggestion.colorPalette} />}
+      <div className="pt-2 mt-auto">
+        <button
+          onClick={() => onVisualize(suggestion)}
+          className="w-full flex items-center justify-center gap-2 bg-purple-600/50 hover:bg-purple-600 text-purple-200 hover:text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all duration-300"
+        >
+          <SparkleIcon />
+          Visualize Outfit
+        </button>
+      </div>
     </div>
   );
 };

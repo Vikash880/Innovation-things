@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OutfitSuggestion, StyleProfile } from './types';
 import TabSelector from './components/TabSelector';
 import OccasionStylist from './components/OccasionStylist';
@@ -10,6 +10,8 @@ import ErrorMessage from './components/ErrorMessage';
 import StyleProfileModal from './components/StyleProfile';
 import LiveStylist from './components/LiveStylist';
 import SavedOutfits from './components/SavedOutfits';
+import VisualizeOutfitModal from './components/VisualizeOutfitModal';
+import { visualizeOutfit } from './services/geminiService';
 
 type Tab = 'occasion' | 'item' | 'live' | 'saved';
 
@@ -22,6 +24,18 @@ const App: React.FC = () => {
   const [styleProfile, setStyleProfile] = useState<StyleProfile>({ style: '', colors: '', gender: '', savedOutfits: [] });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
 
+  // State for the new visualization modal
+  const [isVisualizeModalOpen, setIsVisualizeModalOpen] = useState<boolean>(false);
+  const [visualizingOutfit, setVisualizingOutfit] = useState<OutfitSuggestion | null>(null);
+  const [visualizationImageUrl, setVisualizationImageUrl] = useState<string | null>(null);
+  const [isVisualizing, setIsVisualizing] = useState<boolean>(false);
+  const [visualizationError, setVisualizationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!styleProfile.gender) {
+      setIsProfileModalOpen(true);
+    }
+  }, []); // Run only on mount
 
   const handleNewSuggestions = (newSuggestions: OutfitSuggestion[]) => {
     setSuggestions(newSuggestions);
@@ -59,6 +73,31 @@ const App: React.FC = () => {
     return styleProfile.savedOutfits?.some(o => o.outfitName === outfit.outfitName) ?? false;
   };
 
+  const handleVisualize = async (outfit: OutfitSuggestion) => {
+    setIsVisualizeModalOpen(true);
+    setIsVisualizing(true);
+    setVisualizingOutfit(outfit);
+    setVisualizationImageUrl(null);
+    setVisualizationError(null);
+
+    try {
+      const imageUrl = await visualizeOutfit(outfit, styleProfile);
+      setVisualizationImageUrl(imageUrl);
+    } catch (err: any) {
+      setVisualizationError(err.message || 'An unexpected error occurred during visualization.');
+    } finally {
+      setIsVisualizing(false);
+    }
+  };
+
+  const closeVisualizeModal = () => {
+    setIsVisualizeModalOpen(false);
+    setVisualizingOutfit(null);
+    setVisualizationImageUrl(null);
+    setIsVisualizing(false);
+    setVisualizationError(null);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'occasion':
@@ -68,7 +107,7 @@ const App: React.FC = () => {
       case 'live':
         return <LiveStylist onSuggestions={handleNewSuggestions} setLoading={setIsLoading} setError={setError} styleProfile={styleProfile} />;
       case 'saved':
-        return <SavedOutfits savedOutfits={styleProfile.savedOutfits || []} onSaveToggle={handleSaveToggle} />;
+        return <SavedOutfits savedOutfits={styleProfile.savedOutfits || []} onSaveToggle={handleSaveToggle} onVisualize={handleVisualize} />;
       default:
         return null;
     }
@@ -83,6 +122,14 @@ const App: React.FC = () => {
           onClose={() => setIsProfileModalOpen(false)}
         />
       )}
+      <VisualizeOutfitModal
+        isOpen={isVisualizeModalOpen}
+        onClose={closeVisualizeModal}
+        outfit={visualizingOutfit}
+        imageUrl={visualizationImageUrl}
+        isLoading={isVisualizing}
+        error={visualizationError}
+      />
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
@@ -132,6 +179,7 @@ const App: React.FC = () => {
                     suggestion={suggestion}
                     isSaved={isOutfitSaved(suggestion)}
                     onSaveToggle={handleSaveToggle}
+                    onVisualize={handleVisualize}
                   />
                 ))}
               </div>
